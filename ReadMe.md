@@ -65,7 +65,7 @@ They all begin with `repl-` so you can use tab completion to find them.
 * Git - For getting this repository
 * Bash - This project has only been tested on Bash.
   It may work with Zsh.
-* Clojure
+* Java
 * Leiningen - Currently `lein` is used to start nREPL servers.
 
 
