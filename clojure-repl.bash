@@ -25,15 +25,7 @@ repl-status() (
 
 repl-stop() (
   _repl-check
-  pid=$(< "$pid_file")
-  read -r -a pids <<<"$(
-    ps -p "$pid" --ppid "$pid" -o pid= | xargs
-  )"
-  (
-    set -x
-    kill -9 "${pids[@]}"
-    rm -f "$port_file" "$pid_file"
-  )
+  _repl-kill
   echo "REPL server stopped"
 )
 
@@ -42,6 +34,7 @@ repl-connect-lein() (
   lein repl :connect
 )
 
+# shellcheck disable=2009,2062
 repl-debug() (
   _repl-init
   repl-status || true
@@ -67,10 +60,19 @@ _repl-init() {
   if [[ -f $port_file && ! -f $pid_file ]]; then
     rm -f "$port_file"
   elif [[ -f $pid_file && ! -f $port_file ]]; then
-    kill -9 $(< "$pid_file") &>/dev/null || true
-    rm -f "$pid_file"
+    _repl-kill
   fi
 }
+
+_repl-kill() (
+  pid=$(< "$pid_file")
+  read -r -a pids <<<"$(
+    ps -p "$pid" --ppid "$pid" -o pid= | xargs
+  )"
+  set -x
+  kill -9 "${pids[@]}"
+  rm -f "$port_file" "$pid_file"
+)
 
 _repl-check() {
   _repl-init
