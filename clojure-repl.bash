@@ -36,20 +36,32 @@ repl-connect-lein() (
 
 # shellcheck disable=2009,2062
 repl-debug() (
-  _repl-init
+  _repl-init || exit
   repl-status || true
-  set -x
-  ps fau | grep [l]ein
-  pid=$(< "$pid_file")
-  ps -p "$pid" --ppid "$pid"
-  ps -p "$pid" --ppid "$pid" -o pid=
+  if $is_macos; then
+    (
+      set -x
+      pid=$(< "$pid_file")
+      ps -o pid,ppid,command | grep "$pid[ ]"
+    )
+  else
+    (
+      set -x
+      ps -fau | grep '[l]ein'
+      pid=$(< "$pid_file")
+      ps -p "$pid" --ppid "$pid"
+      ps -p "$pid" --ppid "$pid" -o pid=
+    )
+  fi
 )
 
 _repl-init() {
   set -e -u -o pipefail
-  shopt -s inherit_errexit
+  shopt -s inherit_errexit &>/dev/null || true
 
-  die() ( echo "$*"; exit 1 )
+  die() { echo "$*"; exit 1; }
+
+  [[ $OSTYPE == darwin* ]] && is_macos=true || is_macos=false
 
   port_file=./.nrepl-port
   port_file_home=$HOME/.lein/repl-port
@@ -66,9 +78,15 @@ _repl-init() {
 
 _repl-kill() (
   pid=$(< "$pid_file")
-  read -r -a pids <<<"$(
-    ps -p "$pid" --ppid "$pid" -o pid= | xargs
-  )"
+  if $is_macos; then
+    read -r -a pids <<<"$(
+      ps -o pid,ppid | grep "[ ]$pid"
+    )"
+  else
+    read -r -a pids <<<"$(
+      ps -p "$pid" --ppid "$pid" -o pid= | xargs
+    )"
+  fi
   set -x
   kill -9 "${pids[@]}"
   rm -f "$port_file" "$pid_file"
