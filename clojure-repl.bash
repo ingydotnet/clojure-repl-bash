@@ -42,7 +42,7 @@ repl-debug() (
     (
       set -x
       pid=$(< "$pid_file")
-      ps -o pid,ppid,command | grep "$pid[ ]"
+      ps -o pid,ppid,command | grep "${pid}[ ]"
     )
   else
     (
@@ -80,6 +80,7 @@ _repl-kill() (
   pid=$(< "$pid_file")
   if $is_macos; then
     read -r -a pids <<<"$(
+      # shellcheck disable=2009
       ps -o pid,ppid | grep "[ ]$pid"
     )"
   else
